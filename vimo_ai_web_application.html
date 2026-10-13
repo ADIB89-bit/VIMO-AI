@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIMO AI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        terracotta: {
+                            50: '#fdf8f6',
+                            100: '#f2e8e1',
+                            500: '#b95c38',
+                            600: '#a04e2e',
+                            700: '#863e23',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked JS -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight JS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background-color: rgba(185, 92, 56, 0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background-color: rgba(185, 92, 56, 0.6); }
+        .prose pre { padding: 0 !important; background: transparent !important; }
+        .prose code { color: inherit; }
+    </style>
+</head>
+<body class="bg-[#faf8f5] dark:bg-[#121110] text-[#2c2a29] dark:text-[#e6e1da] font-sans antialiased h-screen flex flex-col md:flex-row overflow-hidden transition-colors duration-200">
+
+    <!-- Mobile Header -->
+    <div class="md:hidden flex items-center justify-between p-4 border-b border-[#e5dfd5] dark:border-[#2a2725] bg-[#f3efe8] dark:bg-[#1a1816]">
+        <div class="flex items-center space-x-2">
+            <span class="text-xl font-serif font-bold text-terracotta-500">VIMO AI</span>
+            <span id="mobile-token-badge" class="text-[10px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full font-bold">20 Tokens Free</span>
+        </div>
+        <button onclick="toggleMobileSidebar()" class="text-gray-600 dark:text-gray-300 focus:outline-none">
+            <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-[#f3efe8] dark:bg-[#1a1816] border-r border-[#e5dfd5] dark:border-[#2a2725] flex flex-col justify-between p-4 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out md:relative">
+        <div class="flex flex-col h-full overflow-hidden">
+            <!-- Header & Logo -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl font-serif font-bold text-terracotta-500">VIMO AI</span>
+                    <span id="sidebar-user-badge" class="text-xs bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold">20 Tokens Daily</span>
+                </div>
+                <button onclick="toggleMobileSidebar()" class="md:hidden text-gray-500">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Start New Chat -->
+            <button onclick="startNewChat()" class="w-full bg-[#e8e1d7] dark:bg-[#262320] hover:bg-[#dfd6c8] dark:hover:bg-[#302c28] text-left px-3 py-2.5 rounded-xl font-medium text-sm transition flex items-center justify-between border border-[#d8cebe] dark:border-[#38332e] mb-4 shadow-sm">
+                <span class="flex items-center space-x-2">
+                    <i class="fa-solid fa-plus text-terracotta-500"></i>
+                    <span>New Chat</span>
+                </span>
+                <span class="text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">Ctrl+K</span>
+            </button>
+
+            <!-- Navigation Links -->
+            <div class="space-y-1 mb-4 border-b border-[#e5dfd5] dark:border-[#2a2725] pb-3">
+                <button onclick="startNewChat()" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-between bg-terracotta-500/10 text-terracotta-600 dark:text-terracotta-500">
+                    <span class="flex items-center space-x-2.5">
+                        <i class="fa-solid fa-comments w-4"></i>
+                        <span>AI Assistant</span>
+                    </span>
+                </button>
+                <button onclick="triggerPhotoTask()" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-between text-gray-700 dark:text-gray-300 hover:bg-[#e8e1d7] dark:hover:bg-[#262320]">
+                    <span class="flex items-center space-x-2.5">
+                        <i class="fa-solid fa-image w-4 text-purple-500"></i>
+                        <span>Photo Studio (1 Token)</span>
+                    </span>
+                </button>
+                <button onclick="triggerVideoTask()" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-between text-gray-700 dark:text-gray-300 hover:bg-[#e8e1d7] dark:hover:bg-[#262320]">
+                    <span class="flex items-center space-x-2.5">
+                        <i class="fa-solid fa-video w-4 text-blue-500"></i>
+                        <span>10s Video Studio (2 Tokens)</span>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Recent Chats List -->
+            <div class="flex-1 overflow-y-auto min-h-0 pr-1">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Recent Conversations</p>
+                    <button onclick="clearAllHistory()" title="Clear History" class="text-[10px] text-gray-400 hover:text-red-500">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+                <ul id="chat-history-list" class="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                    <!-- Dynamic Recent Sessions -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Sidebar Footer Controls -->
+        <div class="pt-3 border-t border-[#e5dfd5] dark:border-[#2a2725] space-y-3">
+            <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                <button onclick="toggleDarkMode()" class="flex items-center space-x-2 px-2 py-1.5 rounded-lg hover:bg-[#e8e1d7] dark:hover:bg-[#262320] transition">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                    <span id="theme-text">Dark Mode</span>
+                </button>
+                <button onclick="openApiKeyModal()" class="flex items-center space-x-1 px-2 py-1.5 rounded-lg hover:bg-[#e8e1d7] dark:hover:bg-[#262320] transition text-terracotta-500">
+                    <i class="fa-solid fa-key"></i>
+                    <span>API Key</span>
+                </button>
+            </div>
+
+            <!-- User Auth Card -->
+            <div class="bg-[#e8e1d7]/60 dark:bg-[#221f1c] p-2.5 rounded-xl border border-[#d8cebe] dark:border-[#332f2b]">
+                <div id="auth-logged-in" class="hidden flex flex-col space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2 min-w-0">
+                            <div id="user-avatar" class="w-7 h-7 rounded-full bg-terracotta-500 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                U
+                            </div>
+                            <div class="min-w-0">
+                                <p id="user-email-display" class="text-xs font-semibold truncate text-gray-800 dark:text-gray-200">user@gmail.com</p>
+                                <p id="user-token-display" class="text-[10px] text-amber-600 dark:text-amber-400 font-bold">Tokens: 20 Left</p>
+                            </div>
+                        </div>
+                        <button onclick="signOutUser()" title="Sign Out" class="text-gray-400 hover:text-red-500 p-1">
+                            <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                        </button>
+                    </div>
+                    <button id="upgrade-sidebar-btn" onclick="openPricingModal()" class="w-full bg-gradient-to-r from-amber-500 to-terracotta-500 text-white text-xs font-bold py-1.5 rounded-lg hover:opacity-95 shadow transition flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-coins text-[10px]"></i>
+                        <span>Buy Tokens</span>
+                    </button>
+                </div>
+
+                <div id="auth-logged-out" class="flex flex-col space-y-2">
+                    <p class="text-xs text-gray-600 dark:text-gray-400 text-center">20 Free Tokens Daily on Login</p>
+                    <button onclick="openAuthModal()" class="w-full bg-terracotta-500 hover:bg-terracotta-600 text-white text-xs font-semibold py-1.5 rounded-lg transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-user"></i>
+                        <span>Login / Register</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full bg-[#faf8f5] dark:bg-[#121110] relative overflow-hidden">
+        
+        <!-- Header Bar -->
+        <header class="h-14 border-b border-[#e5dfd5] dark:border-[#2a2725] flex items-center justify-between px-6 bg-[#faf8f5] dark:bg-[#121110] flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <span class="font-serif text-lg font-semibold text-gray-800 dark:text-gray-200">VIMO AI Assistant</span>
+                <span id="header-token-badge" class="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-full font-bold">20 TOKENS DAILY</span>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button onclick="openPricingModal()" class="text-xs bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 px-3 py-1.5 rounded-lg font-medium transition border border-amber-500/30 flex items-center space-x-1">
+                    <i class="fa-solid fa-coins text-amber-500"></i>
+                    <span>Buy Tokens</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Messages Container -->
+        <div id="messages-container" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 max-w-4xl mx-auto w-full">
+            
+            <!-- Hero Welcome Card -->
+            <div id="welcome-view" class="my-16 text-center">
+                <h2 class="text-3xl md:text-4xl font-serif text-terracotta-500 font-bold mb-3">How can VIMO AI help you today?</h2>
+                <p class="text-gray-600 dark:text-gray-400 text-sm max-w-lg mx-auto">Ask questions, write code, generate photos (1 Token), or create 10s HD videos (2 Tokens). 20 Tokens Reset Daily!</p>
+            </div>
+
+        </div>
+
+        <!-- Input Area Section -->
+        <div class="p-4 bg-[#faf8f5] dark:bg-[#121110] flex-shrink-0">
+            <div class="max-w-4xl mx-auto bg-white dark:bg-[#1a1816] border border-[#d8cebe] dark:border-[#332f2b] rounded-2xl p-3 shadow-md focus-within:border-terracotta-500 transition">
+                
+                <!-- Attached File Preview -->
+                <div id="attachment-preview" class="hidden mb-2 p-2 bg-gray-50 dark:bg-[#221f1c] rounded-xl flex items-center justify-between border border-gray-200 dark:border-gray-800">
+                    <div class="flex items-center space-x-2 min-w-0">
+                        <i id="attachment-icon" class="fa-solid fa-image text-terracotta-500 text-sm"></i>
+                        <span id="attachment-name" class="text-xs truncate text-gray-700 dark:text-gray-300">filename.png</span>
+                    </div>
+                    <button onclick="removeAttachedFile()" class="text-gray-400 hover:text-red-500 p-1">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                </div>
+
+                <textarea id="user-input" rows="2" placeholder="Ask VIMO AI, write code, or type photo/video prompt..." class="w-full resize-none outline-none text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 bg-transparent" onkeydown="handleKeyPress(event)"></textarea>
+                
+                <!-- Gallery Hidden File Input -->
+                <input type="file" id="gallery-file-input" class="hidden" accept="image/*,video/*" onchange="handleFileSelected(event)">
+
+                <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 mt-1">
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openGalleryPicker()" class="text-gray-400 hover:text-terracotta-500 p-1.5 rounded-lg transition" title="Attach image or video from gallery">
+                            <i class="fa-solid fa-paperclip text-sm"></i>
+                        </button>
+                    </div>
+                    
+                    <button onclick="sendMessage()" class="bg-terracotta-500 hover:bg-terracotta-600 text-white px-4 py-1.5 rounded-xl transition flex items-center space-x-1.5 font-medium text-sm">
+                        <span>Send</span>
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Creator Credit Footer -->
+            <p class="text-center text-[11px] text-gray-400 dark:text-gray-500 mt-2">
+                This VIMO AI is made by ADIB
+            </p>
+        </div>
+
+    </main>
+
+    <!-- Buy Tokens Modal -->
+    <div id="pricing-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1816] border border-[#d8cebe] dark:border-[#332f2b] rounded-3xl max-w-2xl w-full p-6 relative shadow-2xl overflow-y-auto max-h-[90vh]">
+            <button onclick="closePricingModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="text-center mb-6">
+                <span class="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-3 py-1 rounded-full border border-amber-500/20">RECHARGE TOKENS</span>
+                <h3 class="text-2xl font-serif font-bold text-gray-800 dark:text-gray-100 mt-2">Get More VIMO Tokens</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Photo Gen = 1 Token | 10s Video Gen = 2 Tokens | Text Chat = Free</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <!-- Plan 1: $1 / 100 Tokens -->
+                <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-4 bg-gray-50/50 dark:bg-[#221f1c] flex flex-col justify-between hover:border-terracotta-500 transition">
+                    <div>
+                        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Starter</span>
+                        <h4 class="text-xl font-bold text-gray-800 dark:text-gray-100 mt-1">$1 <span class="text-xs font-normal text-gray-500">/ 100 Tokens</span></h4>
+                        <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2 mt-4">
+                            <li class="flex items-center space-x-1.5"><i class="fa-solid fa-check text-emerald-500"></i><span>100 Photo Generations</span></li>
+                            <li class="flex items-center space-x-1.5"><i class="fa-solid fa-check text-emerald-500"></i><span>50 Video Creations</span></li>
+                        </ul>
+                    </div>
+                    <button onclick="simulateTokenPurchase(100, '$1')" class="w-full mt-6 bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold py-2 rounded-xl transition">
+                        Buy 100 Tokens ($1)
+                    </button>
+                </div>
+
+                <!-- Plan 2: $5 / 550 Tokens -->
+                <div class="border-2 border-terracotta-500 rounded-2xl p-4 bg-terracotta-50/20 dark:bg-terracotta-500/10 flex flex-col justify-between relative shadow-lg">
+                    <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-terracotta-500 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Best Value</span>
+                    <div>
+                        <span class="text-[10px] font-bold text-terracotta-600 dark:text-terracotta-400 uppercase tracking-wider">Pro Pack</span>
+                        <h4 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-1">$5 <span class="text-xs font-normal text-gray-500">/ 550 Tokens</span></h4>
+                        <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2 mt-4">
+                            <li class="flex items-center space-x-1.5"><i class="fa-solid fa-check text-emerald-500"></i><span>550 Photo Generations</span></li>
+                            <li class="flex items-center space-x-1.5"><i class="fa-solid fa-check text-emerald-500"></i><span>275 Video Creations</span></li>
+                        </ul>
+                    </div>
+                    <button onclick="simulateTokenPurchase(550, '$5')" class="w-full mt-6 bg-terracotta-500 hover:bg-terracotta-600 text-white text-xs font-bold py-2 rounded-xl transition shadow">
+                        Buy 550 Tokens ($5)
+                    </button>
+                </div>
+
+                <!-- Plan 3: $10 / 1200 Tokens -->
+                <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-4 bg-gray-50/50 dark:bg-[#221f1c] flex flex-col justify-between hover:border-terracotta-500 transition">
+                    <div>
+                        <span class="text-[10px] font-bold text-purple-500 uppercase tracking-wider">Max Pack</span>
+                        <h4 class="text-xl font-bold text-gray-800 dark:text-gray-100 mt-1">$10 <span class="text-xs font-normal text-gray-500">/ 1200 Tokens</span></h4>
+                        <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2 mt-4">
+                            <li class="flex items-center space-x-1.5"><i class="fa-solid fa-check text-emerald-500"></i><span>1200 Photo Generations</span></li>
+                            <li class="flex items-center space-x-1.5"><i class="fa-solid fa-check text-emerald-500"></i><span>600 Video Creations</span></li>
+                        </ul>
+                    </div>
+                    <button onclick="simulateTokenPurchase(1200, '$10')" class="w-full mt-6 bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold py-2 rounded-xl transition">
+                        Buy 1200 Tokens ($10)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Exclusive Admin Note for adibislam811@gmail.com -->
+            <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
+                <p class="text-xs text-amber-700 dark:text-amber-300">
+                    <i class="fa-solid fa-shield-halved mr-1"></i>
+                    <strong>Admin Privilege:</strong> Logging in as <code class="bg-amber-500/20 px-1 py-0.5 rounded font-mono font-bold">adibislam811@gmail.com</code> grants Unlimited Tokens automatically!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1816] border border-[#d8cebe] dark:border-[#332f2b] rounded-3xl max-w-sm w-full p-6 relative shadow-2xl">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="text-center mb-6">
+                <h3 class="text-xl font-serif font-bold text-gray-800 dark:text-gray-100">Welcome to VIMO AI</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Sign in to claim 20 Free Tokens every day</p>
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="loginWithGoogle()" class="w-full bg-white dark:bg-[#262320] border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 py-2.5 px-4 rounded-xl font-medium text-xs flex items-center justify-center space-x-2 shadow-sm hover:bg-gray-50 dark:hover:bg-[#302c28] transition">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                    <span>Continue with Google</span>
+                </button>
+
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-gray-200 dark:border-gray-800"></div>
+                    <span class="flex-shrink mx-2 text-[10px] text-gray-400 uppercase">or email</span>
+                    <div class="flex-grow border-t border-gray-200 dark:border-gray-800"></div>
+                </div>
+
+                <input id="auth-email-input" type="email" placeholder="adibislam811@gmail.com" class="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-700 dark:bg-[#262320] dark:text-gray-200 rounded-xl outline-none focus:border-terracotta-500">
+                <input id="auth-password-input" type="password" placeholder="Password" class="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-700 dark:bg-[#262320] dark:text-gray-200 rounded-xl outline-none focus:border-terracotta-500">
+
+                <button onclick="loginWithEmail()" class="w-full bg-terracotta-500 hover:bg-terracotta-600 text-white py-2 rounded-xl font-semibold text-xs transition">
+                    Sign In / Register
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="api-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1816] border border-[#d8cebe] dark:border-[#332f2b] rounded-3xl max-w-sm w-full p-6 relative shadow-2xl">
+            <button onclick="closeApiKeyModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-lg font-serif font-bold text-gray-800 dark:text-gray-100 mb-2">Custom Gemini API Key</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Paste your key from Google AI Studio to power responses directly.</p>
+            <input id="api-key-input" type="password" placeholder="AIzaSy..." class="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-700 dark:bg-[#262320] dark:text-gray-200 rounded-xl outline-none focus:border-terracotta-500 mb-4">
+            <button onclick="saveApiKey()" class="w-full bg-terracotta-500 text-white text-xs font-bold py-2 rounded-xl hover:bg-terracotta-600 transition">Save API Key</button>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        const SYSTEM_INSTRUCTION = `You are VIMO AI, a helpful, intelligent, and precise AI assistant like ChatGPT and Gemini. 
+IMPORTANT CREATOR IDENTITY RULE:
+If anyone asks who created you, who made you, who is your developer, or about your origins (in Bengali, English, or any language):
+You MUST state clearly that you were created by "ADIB ISLAM" (a 16-year-old student reading in Class 9 in Bangladesh). 
+Be polite, respectful, and answer naturally to all other queries.`;
+
+        const ADMIN_EMAIL = "adibislam811@gmail.com";
+        const DAILY_FREE_TOKENS = 20;
+
+        // Firebase Setup
+        const firebaseConfig = {
+            apiKey: "AIzaSy_DEMO_KEY_VIMO_APP",
+            authDomain: "vimo-ai.firebaseapp.com",
+            projectId: "vimo-ai",
+            storageBucket: "vimo-ai.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:demo"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+
+        // State Management
+        let currentUser = null;
+        let isProUser = false;
+        let currentTokens = DAILY_FREE_TOKENS;
+        let currentChatId = null;
+        let chatSessions = {};
+        let geminiApiKey = localStorage.getItem('vimo_gemini_key') || "";
+        let selectedFile = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSessionsFromStorage();
+            initAuthStateListener();
+            setupMarkdown();
+        });
+
+        function setupMarkdown() {
+            marked.setOptions({
+                highlight: function(code, lang) {
+                    if (lang && hljs.getLanguage(lang)) {
+                        return hljs.highlight(code, { language: lang }).value;
+                    }
+                    return hljs.highlightAuto(code).value;
+                },
+                breaks: true
+            });
+        }
+
+        function initAuthStateListener() {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    applyUserPermissions(user.email);
+                } else {
+                    const localUser = localStorage.getItem('vimo_logged_user_email');
+                    if (localUser) {
+                        applyUserPermissions(localUser);
+                    } else {
+                        isProUser = false;
+                        currentTokens = DAILY_FREE_TOKENS;
+                        updateUserUI(null);
+                    }
+                }
+            });
+        }
+
+        function applyUserPermissions(email) {
+            const cleanEmail = email ? email.trim().toLowerCase() : "";
+            currentUser = { email: cleanEmail };
+            localStorage.setItem('vimo_logged_user_email', cleanEmail);
+
+            if (cleanEmail === ADMIN_EMAIL) {
+                isProUser = true;
+                currentTokens = 999999;
+            } else {
+                isProUser = false;
+                const todayStr = new Date().toISOString().slice(0, 10);
+                const lastResetDate = localStorage.getItem('vimo_last_token_reset_' + cleanEmail);
+                let purchasedTokens = parseInt(localStorage.getItem('vimo_purchased_tokens_' + cleanEmail) || '0');
+
+                if (lastResetDate !== todayStr) {
+                    currentTokens = DAILY_FREE_TOKENS + purchasedTokens;
+                    localStorage.setItem('vimo_tokens_' + cleanEmail, currentTokens);
+                    localStorage.setItem('vimo_last_token_reset_' + cleanEmail, todayStr);
+                } else {
+                    const savedTokens = localStorage.getItem('vimo_tokens_' + cleanEmail);
+                    currentTokens = savedTokens !== null ? parseInt(savedTokens) : DAILY_FREE_TOKENS;
+                }
+            }
+            updateUserUI(cleanEmail);
+        }
+
+        function updateUserUI(email) {
+            const loggedInDiv = document.getElementById('auth-logged-in');
+            const loggedOutDiv = document.getElementById('auth-logged-out');
+            const emailDisplay = document.getElementById('user-email-display');
+            const userTokenDisplay = document.getElementById('user-token-display');
+            const userAvatar = document.getElementById('user-avatar');
+            const sidebarBadge = document.getElementById('sidebar-user-badge');
+            const headerBadge = document.getElementById('header-token-badge');
+            const mobileBadge = document.getElementById('mobile-token-badge');
+
+            if (email) {
+                loggedInDiv.classList.remove('hidden');
+                loggedOutDiv.classList.add('hidden');
+                emailDisplay.innerText = email;
+                userAvatar.innerText = email.charAt(0).toUpperCase();
+
+                if (isProUser) {
+                    userTokenDisplay.innerText = "Tokens: Unlimited (VIP Owner)";
+                    sidebarBadge.innerText = "UNLIMITED";
+                    sidebarBadge.className = "text-xs bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold";
+                    headerBadge.innerText = "UNLIMITED PRO ACCESS";
+                    headerBadge.className = "text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold";
+                    mobileBadge.innerText = "PRO VIP";
+                } else {
+                    userTokenDisplay.innerText = `Tokens: ${currentTokens} Left`;
+                    sidebarBadge.innerText = `${currentTokens} Tokens`;
+                    sidebarBadge.className = "text-xs bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold";
+                    headerBadge.innerText = `${currentTokens} TOKENS AVAILABLE`;
+                    headerBadge.className = "text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-full font-bold";
+                    mobileBadge.innerText = `${currentTokens} Tokens`;
+                }
+            } else {
+                loggedInDiv.classList.add('hidden');
+                loggedOutDiv.classList.remove('hidden');
+                sidebarBadge.innerText = "20 Tokens Daily";
+                headerBadge.innerText = "20 TOKENS DAILY";
+                mobileBadge.innerText = "20 Tokens Free";
+            }
+        }
+
+        function deductTokens(cost) {
+            if (isProUser) return true;
+            if (currentTokens >= cost) {
+                currentTokens -= cost;
+                if (currentUser) {
+                    localStorage.setItem('vimo_tokens_' + currentUser.email, currentTokens);
+                }
+                updateUserUI(currentUser ? currentUser.email : null);
+                return true;
+            } else {
+                alert(`At least ${cost} Token(s) required! Your balance is ${currentTokens}. Please buy more tokens or wait for tomorrow's 20 free tokens.`);
+                openPricingModal();
+                return false;
+            }
+        }
+
+        function openGalleryPicker() {
+            document.getElementById('gallery-file-input').click();
+        }
+
+        function handleFileSelected(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            selectedFile = file;
+            const previewDiv = document.getElementById('attachment-preview');
+            const nameSpan = document.getElementById('attachment-name');
+            const icon = document.getElementById('attachment-icon');
+
+            nameSpan.innerText = file.name;
+            if (file.type.startsWith('video/')) {
+                icon.className = "fa-solid fa-file-video text-blue-500 text-sm";
+            } else {
+                icon.className = "fa-solid fa-file-image text-purple-500 text-sm";
+            }
+            previewDiv.classList.remove('hidden');
+        }
+
+        function removeAttachedFile() {
+            selectedFile = null;
+            document.getElementById('gallery-file-input').value = "";
+            document.getElementById('attachment-preview').classList.add('hidden');
+        }
+
+        function triggerPhotoTask() {
+            document.getElementById('user-input').value = "Generate photo: ultra-realistic 8K photorealistic portrait of a futuristic Bangladesh model at sunset.";
+        }
+
+        function triggerVideoTask() {
+            document.getElementById('user-input').value = "Generate video: 10s HD 60fps cinematic aerial view over green Bangladesh countryside.";
+        }
+
+        function loginWithGoogle() {
+            const mockEmail = prompt("Enter Google Account Email:", "adibislam811@gmail.com");
+            if (!mockEmail) return;
+            applyUserPermissions(mockEmail);
+            closeAuthModal();
+            alert(`Logged in successfully as: ${mockEmail}`);
+        }
+
+        function loginWithEmail() {
+            const emailInput = document.getElementById('auth-email-input').value.trim();
+            if (!emailInput) {
+                alert("Please enter a valid email address!");
+                return;
+            }
+            applyUserPermissions(emailInput);
+            closeAuthModal();
+            alert(`Logged in successfully as: ${emailInput}`);
+        }
+
+        function signOutUser() {
+            currentUser = null;
+            isProUser = false;
+            currentTokens = DAILY_FREE_TOKENS;
+            localStorage.removeItem('vimo_logged_user_email');
+            updateUserUI(null);
+            alert("Signed out successfully.");
+        }
+
+        function simulateTokenPurchase(amount, priceStr) {
+            if (!currentUser) {
+                closePricingModal();
+                openAuthModal();
+                alert("Please login first to purchase tokens!");
+                return;
+            }
+
+            if (currentUser.email.toLowerCase() === ADMIN_EMAIL) {
+                alert("You are logged in as ADIB ISLAM (Admin). You already have UNLIMITED Tokens!");
+                closePricingModal();
+                return;
+            }
+
+            alert(`Simulating payment of ${priceStr}... Added ${amount} Tokens to your account!`);
+            currentTokens += amount;
+            
+            let prevPurchased = parseInt(localStorage.getItem('vimo_purchased_tokens_' + currentUser.email) || '0');
+            localStorage.setItem('vimo_purchased_tokens_' + currentUser.email, prevPurchased + amount);
+            localStorage.setItem('vimo_tokens_' + currentUser.email, currentTokens);
+            
+            updateUserUI(currentUser.email);
+            closePricingModal();
+        }
+
+        function loadSessionsFromStorage() {
+            const saved = localStorage.getItem('vimo_chat_sessions');
+            if (saved) {
+                try { chatSessions = JSON.parse(saved); } catch(e) { chatSessions = {}; }
+            }
+            renderRecentChatsList();
+        }
+
+        function saveSessionsToStorage() {
+            localStorage.setItem('vimo_chat_sessions', JSON.stringify(chatSessions));
+            renderRecentChatsList();
+        }
+
+        function renderRecentChatsList() {
+            const list = document.getElementById('chat-history-list');
+            list.innerHTML = "";
+
+            const sessionKeys = Object.keys(chatSessions).reverse();
+            if (sessionKeys.length === 0) {
+                list.innerHTML = `<li class="text-xs text-gray-400 italic py-2">No recent chats yet</li>`;
+                return;
+            }
+
+            sessionKeys.forEach(id => {
+                const session = chatSessions[id];
+                const li = document.createElement('li');
+                const isActive = id === currentChatId;
+                
+                li.className = `group flex items-center justify-between p-2 rounded-lg cursor-pointer transition ${
+                    isActive ? 'bg-[#e8e1d7] dark:bg-[#262320] text-terracotta-600 font-semibold' : 'hover:bg-[#e8e1d7]/50 dark:hover:bg-[#262320]/50'
+                }`;
+
+                li.innerHTML = `
+                    <div onclick="switchSession('${id}')" class="flex items-center space-x-2 truncate flex-1 min-w-0">
+                        <i class="fa-regular fa-message text-xs text-gray-400"></i>
+                        <span class="truncate text-xs">${escapeHtml(session.title || 'Conversation')}</span>
+                    </div>
+                    <button onclick="deleteSession('${id}', event)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 transition">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function startNewChat() {
+            currentChatId = null;
+            selectedFile = null;
+            document.getElementById('attachment-preview').classList.add('hidden');
+            document.getElementById('messages-container').innerHTML = `
+                <div id="welcome-view" class="my-16 text-center">
+                    <h2 class="text-3xl md:text-4xl font-serif text-terracotta-500 font-bold mb-3">How can VIMO AI help you today?</h2>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm max-w-lg mx-auto">Ask questions, write code, generate photos (1 Token), or create 10s HD videos (2 Tokens). 20 Tokens Reset Daily!</p>
+                </div>
+            `;
+            renderRecentChatsList();
+        }
+
+        function switchSession(id) {
+            if (!chatSessions[id]) return;
+            currentChatId = id;
+            const container = document.getElementById('messages-container');
+            container.innerHTML = "";
+
+            chatSessions[id].messages.forEach(msg => {
+                appendMessageToUI(msg.sender, msg.text, msg.mediaHtml || null, false);
+            });
+            renderRecentChatsList();
+        }
+
+        function deleteSession(id, event) {
+            event.stopPropagation();
+            delete chatSessions[id];
+            if (currentChatId === id) {
+                startNewChat();
+            } else {
+                saveSessionsToStorage();
+            }
+        }
+
+        function clearAllHistory() {
+            if (confirm("Clear all chat history?")) {
+                chatSessions = {};
+                saveSessionsToStorage();
+                startNewChat();
+            }
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            let text = input.value.trim();
+            if (!text && !selectedFile) return;
+
+            const lowerText = text.toLowerCase();
+            const isPhotoReq = lowerText.includes("generate photo") || lowerText.includes("make photo") || lowerText.includes("generate image") || lowerText.includes("ছবি বানিয়ে দাও") || (selectedFile && selectedFile.type.startsWith('image/'));
+            const isVideoReq = lowerText.includes("generate video") || lowerText.includes("make video") || lowerText.includes("ভিডিও বানিয়ে দাও") || (selectedFile && selectedFile.type.startsWith('video/'));
+
+            if (isVideoReq) {
+                if (!deductTokens(2)) return;
+            } else if (isPhotoReq) {
+                if (!deductTokens(1)) return;
+            }
+
+            if (!currentChatId) {
+                currentChatId = 'session_' + Date.now();
+                chatSessions[currentChatId] = {
+                    id: currentChatId,
+                    title: (text || 'Media Query').substring(0, 30),
+                    messages: []
+                };
+            }
+
+            const welcomeView = document.getElementById('welcome-view');
+            if (welcomeView) welcomeView.remove();
+
+            let userDisplayText = text;
+            if (selectedFile) {
+                userDisplayText = `[Attached File: ${selectedFile.name}]\n` + text;
+            }
+
+            appendMessageToUI('user', userDisplayText, null, true);
+            
+            input.value = '';
+            removeAttachedFile();
+
+            const thinkingId = 'thinking_' + Date.now();
+            appendThinkingState(thinkingId);
+
+            try {
+                let responseText = "";
+                let mediaHtml = null;
+
+                if (isVideoReq) {
+                    responseText = "🎬 **VIMO AI 10-Second Video Engine**\n\n[2 Tokens Deducted] Your 10-second high-definition animated video has been generated successfully!";
+                    
+                    mediaHtml = `
+                        <div class="mt-3 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-md bg-black">
+                            <video class="w-full h-64 md:h-80 object-cover" controls autoplay loop playsinline>
+                                <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4">
+                                Your browser does not support HTML5 video.
+                            </video>
+                            <div class="p-2.5 bg-gray-900 text-white flex items-center justify-between text-xs">
+                                <span class="font-medium flex items-center space-x-1.5"><i class="fa-solid fa-circle-play text-blue-400"></i><span>10s HD Cinematic Video</span></span>
+                                <a href="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" download target="_blank" class="bg-terracotta-500 px-3 py-1 rounded-lg hover:bg-terracotta-600 transition font-bold"><i class="fa-solid fa-download mr-1"></i>Download</a>
+                            </div>
+                        </div>
+                    `;
+                } else if (isPhotoReq) {
+                    responseText = "🖼️ **VIMO AI Photo Studio**\n\n[1 Token Deducted] High-resolution 8K AI Photo generated successfully!";
+                    
+                    const encodedPrompt = encodeURIComponent(text || "futuristic aesthetic 8k photo Bangladesh");
+                    const photoUrl = `https://pollinations.ai/p/${encodedPrompt}?width=800&height=600&seed=${Math.floor(Math.random()*9999)}&nologo=true`;
+                    
+                    mediaHtml = `
+                        <div class="mt-3 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-md bg-gray-100 dark:bg-gray-900">
+                            <img src="${photoUrl}" alt="AI Generated Photo" class="w-full h-auto max-h-96 object-cover hover:scale-105 transition duration-300" loading="lazy" />
+                            <div class="p-2.5 bg-gray-900 text-white flex items-center justify-between text-xs">
+                                <span class="font-medium flex items-center space-x-1.5"><i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i><span>8K Photorealistic Render</span></span>
+                                <a href="${photoUrl}" download target="_blank" class="bg-terracotta-500 px-3 py-1 rounded-lg hover:bg-terracotta-600 transition font-bold"><i class="fa-solid fa-download mr-1"></i>Download</a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    responseText = await callGeminiAPI(text);
+                }
+
+                removeThinkingState(thinkingId);
+                appendMessageToUI('ai', responseText, mediaHtml, true);
+            } catch(error) {
+                removeThinkingState(thinkingId);
+                appendMessageToUI('ai', "I encountered an error processing your request. Please try again.", null, true);
+            }
+        }
+
+        async function callGeminiAPI(prompt) {
+            const lowerPrompt = prompt.toLowerCase();
+            
+            if (lowerPrompt.includes("who made") || lowerPrompt.includes("who created") || lowerPrompt.includes("ke banise") || lowerPrompt.includes("karo banano") || lowerPrompt.includes("কে বানিয়েছে") || lowerPrompt.includes("কে বানিয়েছ")) {
+                return "আমি **VIMO AI**! আমাকে তৈরি করেছেন **ADIB ISLAM** (বয়স ১৬ বছর, ক্লাস ৯-এর ছাত্র, বাংলাদেশ 🇧🇩)।";
+            }
+
+            if (lowerPrompt === "hello" || lowerPrompt === "hi" || lowerPrompt === "হ্যালো" || lowerPrompt === "হাই") {
+                return "হ্যালো! আমি **VIMO AI**। আজ আপনাকে কিভাবে সাহায্য করতে পারি? (কোডিং, কন্টেন্ট, ফটো বা ১০ সেকেন্ডের ভিডিও জেনারেট করতে পারবেন)";
+            }
+
+            const apiKey = geminiApiKey || "AIzaSy_DEMO_KEY_VIMO_APP";
+            
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        system_instruction: {
+                            parts: [{ text: SYSTEM_INSTRUCTION }]
+                        },
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }]
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.candidates && data.candidates[0].content.parts[0].text) {
+                        return data.candidates[0].content.parts[0].text;
+                    }
+                }
+            } catch(e) {
+                console.error("Gemini API Error:", e);
+            }
+
+            return `আপনার বার্তাটি পেয়েছি! আমি **VIMO AI**। আপনার প্রয়োজনীয় কাজ বা প্রম্পটটি লিখুন, আমি সাহায্য করছি।`;
+        }
+
+        function appendMessageToUI(sender, text, mediaHtml = null, save = true) {
+            const container = document.getElementById('messages-container');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = sender === 'user' ? 'flex justify-end' : 'flex justify-start';
+
+            const innerDiv = document.createElement('div');
+            if (sender === 'user') {
+                innerDiv.className = 'bg-[#e8e1d7] dark:bg-[#262320] text-gray-800 dark:text-gray-100 rounded-2xl px-4 py-2.5 max-w-xl text-sm shadow-sm whitespace-pre-wrap';
+                innerDiv.innerText = text;
+            } else {
+                innerDiv.className = 'bg-white dark:bg-[#1a1816] border border-[#e5dfd5] dark:border-[#2a2725] text-gray-800 dark:text-gray-200 rounded-2xl px-4 py-3 max-w-2xl text-sm shadow-sm leading-relaxed prose dark:prose-invert';
+                innerDiv.innerHTML = marked.parse(text);
+                
+                if (mediaHtml) {
+                    innerDiv.innerHTML += mediaHtml;
+                }
+            }
+
+            msgDiv.appendChild(innerDiv);
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+
+            if (save && currentChatId && chatSessions[currentChatId]) {
+                chatSessions[currentChatId].messages.push({ sender, text, mediaHtml });
+                saveSessionsToStorage();
+            }
+        }
+
+        function appendThinkingState(id) {
+            const container = document.getElementById('messages-container');
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.id = id;
+            thinkingDiv.className = 'flex justify-start';
+            thinkingDiv.innerHTML = `
+                <div class="bg-white dark:bg-[#1a1816] border border-[#e5dfd5] dark:border-[#2a2725] rounded-2xl px-4 py-3 text-xs text-gray-400 flex items-center space-x-2">
+                    <i class="fa-solid fa-spinner fa-spin text-terracotta-500"></i>
+                    <span>VIMO AI is processing...</span>
+                </div>
+            `;
+            container.appendChild(thinkingDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function removeThinkingState(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            document.getElementById('theme-text').innerText = isDark ? 'Light Mode' : 'Dark Mode';
+        }
+
+        function toggleMobileSidebar() {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        }
+
+        function openPricingModal() { document.getElementById('pricing-modal').classList.remove('hidden'); }
+        function closePricingModal() { document.getElementById('pricing-modal').classList.add('hidden'); }
+
+        function openAuthModal() { document.getElementById('auth-modal').classList.remove('hidden'); }
+        function closeAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
+
+        function openApiKeyModal() { document.getElementById('api-modal').classList.remove('hidden'); }
+        function closeApiKeyModal() { document.getElementById('api-modal').classList.add('hidden'); }
+
+        function saveApiKey() {
+            const key = document.getElementById('api-key-input').value.trim();
+            geminiApiKey = key;
+            localStorage.setItem('vimo_gemini_key', key);
+            closeApiKeyModal();
+            alert("API Key saved successfully!");
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>
